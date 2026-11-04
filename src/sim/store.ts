@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { clock, WARPS } from "./clock";
-import { frameBody } from "./ephemeris";
+import { SIZE_SCALE_MIN, clampSizeScale, frameBody } from "./ephemeris";
 import { BODY_BY_ID } from "./bodies";
 import { isBodyEnabled } from "./layers";
 
@@ -106,7 +106,7 @@ export const useSimStore = create<SimSettings & SimActions>()(
       showKuiperBelt: true,
       showComets: true,
       showLagrange: true,
-      sizeScale: 1,
+      sizeScale: SIZE_SCALE_MIN,
       helpDismissed: false,
       listOpen: false,
       jumpOpen: false,
@@ -156,7 +156,7 @@ export const useSimStore = create<SimSettings & SimActions>()(
       setShowKuiperBelt: (v) => retargetIfHidden(set, get, { showKuiperBelt: v }),
       setShowComets: (v) => retargetIfHidden(set, get, { showComets: v }),
       setShowLagrange: (v) => retargetIfHidden(set, get, { showLagrange: v }),
-      setSizeScale: (sizeScale) => set({ sizeScale }),
+      setSizeScale: (sizeScale) => set({ sizeScale: clampSizeScale(sizeScale) }),
       setHelpDismissed: (helpDismissed) => set({ helpDismissed }),
       setListOpen: (listOpen) => set({ listOpen }),
       setJumpOpen: (jumpOpen) => set({ jumpOpen }),
@@ -173,7 +173,7 @@ export const useSimStore = create<SimSettings & SimActions>()(
     }),
     {
       name: "orrery-v1",
-      version: 2,
+      version: 3,
       partialize: (s) => ({
         showOrbits: s.showOrbits,
         showLabels: s.showLabels,
@@ -184,11 +184,44 @@ export const useSimStore = create<SimSettings & SimActions>()(
         showKuiperBelt: s.showKuiperBelt,
         showComets: s.showComets,
         showLagrange: s.showLagrange,
-        sizeScale: s.sizeScale,
+        sizeScale: clampSizeScale(s.sizeScale),
         helpDismissed: s.helpDismissed,
       }),
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<SimSettings>;
+        return {
+          ...current,
+          ...saved,
+          sizeScale: clampSizeScale(
+            typeof saved.sizeScale === "number" ? saved.sizeScale : current.sizeScale,
+          ),
+        };
+      },
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== "object") return persisted as object;
+        const state = { ...(persisted as Record<string, unknown>) };
+        if ("sizeScale" in state) state.sizeScale = clampSizeScale(Number(state.sizeScale));
+        return state;
+      },
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+        const sizeScale = clampSizeScale(state.sizeScale);
+        let persistedScale: number | undefined;
+        try {
+          if (typeof localStorage !== "undefined") {
+            const raw = localStorage.getItem("orrery-v1");
+            if (raw) {
+              const parsed = JSON.parse(raw) as { state?: { sizeScale?: unknown } };
+              if (typeof parsed.state?.sizeScale === "number") persistedScale = parsed.state.sizeScale;
+            }
+          }
+        } catch {
+          persistedScale = undefined;
+        }
+        // setSizeScale persists. The store's setState helper does not.
+        if (sizeScale !== state.sizeScale || (persistedScale !== undefined && persistedScale !== sizeScale)) {
+          state.setSizeScale(sizeScale);
+        }
         syncClock(state);
       },
     },
