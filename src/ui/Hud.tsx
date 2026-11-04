@@ -25,7 +25,16 @@ import {
   parseUtcDate,
   WARPS,
 } from "@/sim/clock";
-import { mapCam, simFrame, ZOOM_IN, ZOOM_OUT, zoomBy } from "@/sim/ephemeris";
+import {
+  clampSizeScale,
+  mapCam,
+  simFrame,
+  SIZE_SCALE_MAX,
+  SIZE_SCALE_MIN,
+  ZOOM_IN,
+  ZOOM_OUT,
+  zoomBy,
+} from "@/sim/ephemeris";
 import { useSimStore } from "@/sim/store";
 import { isBodyEnabled } from "@/sim/layers";
 import { cn } from "@/lib/utils";
@@ -518,16 +527,16 @@ function Toggles() {
           <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">Scale</span>
           <input
             type="range"
-            min={1}
-            max={200}
+            min={SIZE_SCALE_MIN}
+            max={SIZE_SCALE_MAX}
             step={1}
-            value={sizeScale}
+            value={clampSizeScale(sizeScale)}
             onChange={(e) => setSizeScale(Number(e.target.value))}
             className="h-8 w-28 accent-accent"
             aria-label="Body size scale"
             suppressHydrationWarning
           />
-          <span className="w-8 font-mono text-[11px] tabular-nums text-muted">{sizeScale}×</span>
+          <span className="w-8 font-mono text-[11px] tabular-nums text-muted">{clampSizeScale(sizeScale)}×</span>
         </label>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { clock, tickClock } from "@/sim/clock";
 import {
   applyMapCam,
   bodyIconPx,
+  clampSizeScale,
   computeOrbits,
   getBodyStates,
   mapCam,
@@ -25,7 +26,7 @@ function px(n: number) {
 /** Readable icon when zoomed out; true angular size once you close in. Scale enlarges every body. */
 function pipSize(def: BodyDef, zDist: number, focused: boolean, sizeScale: number) {
   const z = Math.max(zDist, 1e-8);
-  const scale = Math.max(sizeScale, 1);
+  const scale = clampSizeScale(sizeScale);
   let floor = bodyIconPx(def);
   if (focused) floor = Math.max(floor, def.kind === "moon" ? 56 : def.kind === "star" ? 56 : 72);
   const tan = Math.tan(((viewState.fov * Math.PI) / 180) / 2);

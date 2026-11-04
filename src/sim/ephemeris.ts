@@ -278,10 +278,20 @@ export function bodyIconPx(def: BodyDef) {
   return 22;
 }
 
+/** Inclusive range for the body-size slider and any persisted sizeScale. */
+export const SIZE_SCALE_MIN = 1;
+export const SIZE_SCALE_MAX = 4;
+
+/** Snap a size multiplier onto the slider's 1×–4× steps. */
+export function clampSizeScale(value: number): number {
+  if (!Number.isFinite(value)) return SIZE_SCALE_MIN;
+  return Math.min(SIZE_SCALE_MAX, Math.max(SIZE_SCALE_MIN, Math.round(value)));
+}
+
 /** World-space radius used for 3D globes. `sizeScale` enlarges every body, not just the Sun. */
 export function visualRadiusAu(def: BodyDef, sizeScale: number, camDist = Infinity) {
   const trueR = kmToAu(def.radiusKm);
-  const scale = Math.max(sizeScale, 1);
+  const scale = clampSizeScale(sizeScale);
   const tan = Math.tan(((viewState.fov * Math.PI) / 180) / 2);
   const h = Math.max(viewState.h, 1);
   const iconR =
